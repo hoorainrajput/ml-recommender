@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Algorithm Recommender</title>
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg: #0d0618;
+            --bg2: #1a0d2e;
+            --bg3: #231040;
+            --bg4: #2d1850;
+            --accent: #8b5cf6;
+            --accent2: #a78bfa;
+            --accent3: #c4b5fd;
+            --cream: #f0ebff;
+            --cream2: #d8d0f0;
+            --text: #f0ebff;
+            --text2: #b8aed8;
+            --text3: #7c6fa0;
+            --border: rgba(139, 92, 246, 0.18);
+            --border2: rgba(139, 92, 246, 0.35);
+            --success: #86efac;
+            --danger: #f87171;
+            --shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            --glow: 0 0 24px rgba(139, 92, 246, 0.2);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── GRID BACKGROUND ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(rgba(139, 92, 246, 0.04) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(139, 92, 246, 0.04) 1px, transparent 1px);
+            background-size: 52px 52px;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── RADIAL GLOW ── */
+        body::after {
+            content: '';
+            position: fixed;
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 900px;
+            height: 600px;
+            background: radial-gradient(ellipse, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── SVG BACKGROUND ── */
+        .bg-neural {
+            position: fixed;
+            top: 0;
+            right: -40px;
+            width: 480px;
+            height: 100vh;
+            opacity: 0.06;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .bg-scatter {
+            position: fixed;
+            bottom: 0;
+            left: -20px;
+            width: 300px;
+            height: 50vh;
+            opacity: 0.05;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── LAYOUT ── */
+        .wrap {
+            position: relative;
+            z-index: 1;
+            max-width: 920px;
+            margin: 0 auto;
+            padding: 0 28px 80px;
+        }
+
+        /* ── HOME ── */
+        .home {
+            padding: 72px 0 52px;
+            text-align: center;
+        }
+
+        .home-eyebrow {
+            font-size: 11px;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            color: var(--accent2);
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeUp 0.7s ease forwards 0.1s;
+        }
+
+        .home h1 {
+            font-size: clamp(22px, 5vw, 55px);
+            font-weight: normal;
+            line-height: 1.12;
+            letter-spacing: -0.01em;
+            margin-bottom: 20px;
+            opacity: 0;
+            animation: fadeUp 0.7s ease forwards 0.2s;
+        }
+
+        .home h1 em {
+            font-style: italic;
+            color: var(--accent2);
+        }
+
+        .home-sub {
+            font-size: 16px;
+            color: var(--text2);
+            max-width: 520px;
+            margin: 0 auto 0;
+            line-height: 1.75;
+            font-style: italic;
+            opacity: 0;
+            animation: fadeUp 0.7s ease forwards 0.3s;
+        }
+
+        /* ── FORM CARD ── */
+        .form-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 36px 40px;
+            margin-bottom: 40px;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            animation: fadeUp 0.7s ease forwards 0.45s;
+        }
+
+        .form-label {
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-label::after {
+            /* content: ''; */
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .inputs-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 22px;
+            margin-bottom: 30px;
+        }
+
+        .input-group label {
+            display: block;
+            font-size: 11px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--text3);
+            margin-bottom: 9px;
+        }
+
+        .select-wrap {
+            position: relative;
+        }
+
+        .select-wrap::after {
+            content: '▾';
+            position: absolute;
+            right: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--accent2);
+            font-size: 12px;
+            pointer-events: none;
+        }
+
+        select {
+            width: 100%;
+            padding: 11px 34px 11px 14px;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--text);
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14px;
+            appearance: none;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        select:focus,
+        select:hover {
+            border-color: var(--border2);
+            box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.08);
+        }
+
+        select option {
+            background: var(--bg3);
+            color: var(--text);
+        }
+
+        .btn-run {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 32px;
+            background: var(--accent);
+            color: var(--cream);
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 15px;
+            font-style: italic;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            letter-spacing: 0.02em;
+            transition: background 0.2s, transform 0.15s, box-shadow 0.2s;
+        }
+
+        .btn-run:hover {
+            background: var(--accent2);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.3);
+        }
+
+        .btn-run:active {
+            transform: translateY(0);
+        }
+
+        .btn-arrow {
+            font-style: normal;
+            transition: transform 0.2s;
+        }
+
+        .btn-run:hover .btn-arrow {
+            transform: translateX(4px);
+        }
+
+        /* ── RESULTS ── */
+        #results {
+            margin-top: 8px;
+        }
+
+        .results-head {
+            margin-bottom: 26px;
+        }
+
+        .results-head h2 {
+            font-size: 24px;
+            font-weight: normal;
+            margin-bottom: 6px;
+        }
+
+        .results-head h2 em {
+            font-style: italic;
+            color: var(--accent2);
+        }
+
+        .results-meta {
+            font-size: 13px;
+            color: var(--text3);
+            font-style: italic;
+        }
+
+        .algo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+        }
+
+        /* ── ALGO CARD ── */
+        .algo-card {
+            background: var(--bg2);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            animation: slideUp 0.4s ease forwards;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .algo-card:hover {
+            border-color: var(--border2);
+            box-shadow: var(--glow);
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(14px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeUp {
+            from {
+                opacity: 0;
+                transform: translateY(18px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .card-top {
+            padding: 26px 30px 20px;
+            border-bottom: 1px solid var(--border);
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 14px;
+            align-items: start;
+        }
+
+        .badge-row {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            padding: 3px 10px;
+            border-radius: 20px;
+            border: 1px solid;
+        }
+
+        .badge-best {
+            color: var(--accent2);
+            border-color: var(--accent2);
+            background: rgba(167, 139, 250, 0.1);
+        }
+
+        .badge-alt {
+            color: var(--text3);
+            border-color: var(--border);
+            background: transparent;
+        }
+
+        .badge-rank {
+            color: var(--accent3);
+            border-color: rgba(196, 181, 253, 0.3);
+            background: rgba(196, 181, 253, 0.06);
+        }
+
+        .algo-name {
+            font-size: 21px;
+            font-weight: normal;
+            color: var(--cream);
+            margin-bottom: 8px;
+        }
+
+        .algo-reason {
+            font-size: 14px;
+            color: var(--text2);
+            line-height: 1.65;
+            font-style: italic;
+            max-width: 580px;
+        }
+
+        .rank-num {
+            font-size: 40px;
+            font-style: italic;
+            color: var(--border2);
+            line-height: 1;
+        }
+
+        .card-body {
+            padding: 22px 30px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .pc-col h4 {
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+            font-weight: normal;
+        }
+
+        .pc-col.pros h4 {
+            color: var(--success);
+        }
+
+        .pc-col.cons h4 {
+            color: var(--danger);
+        }
+
+        .pc-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .pc-list li {
+            font-size: 13.5px;
+            color: var(--text2);
+            line-height: 1.5;
+            display: flex;
+            gap: 8px;
+        }
+
+        .pros .pc-list li::before {
+            content: '+';
+            color: var(--success);
+            flex-shrink: 0;
+            font-size: 12px;
+            margin-top: 1px;
+        }
+
+        .cons .pc-list li::before {
+            content: '–';
+            color: var(--danger);
+            flex-shrink: 0;
+            font-size: 12px;
+            margin-top: 1px;
+        }
+
+        /* ── CODE ── */
+        .code-section {
+            border-top: 1px solid var(--border);
+        }
+
+        .code-toggle {
+            width: 100%;
+            background: none;
+            border: none;
+            padding: 13px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            color: var(--text3);
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13px;
+            font-style: italic;
+            transition: background 0.15s, color 0.15s;
+            text-align: left;
+        }
+
+        .code-toggle:hover {
+            background: rgba(139, 92, 246, 0.05);
+            color: var(--accent2);
+        }
+
+        .chevron {
+            font-style: normal;
+            font-size: 11px;
+            transition: transform 0.2s;
+        }
+
+        .code-toggle.open .chevron {
+            transform: rotate(180deg);
+        }
+
+        .code-wrap {
+            display: none;
+            padding: 0 30px 24px;
+        }
+
+        .code-wrap.open {
+            display: block;
+        }
+
+        .code-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-bottom: none;
+            padding: 9px 14px;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .code-lang {
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--text3);
+        }
+
+        .copy-btn {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11px;
+            color: var(--accent2);
+            background: rgba(139, 92, 246, 0.1);
+            border: 1px solid var(--border2);
+            padding: 3px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.15s;
+            letter-spacing: 0.04em;
+        }
+
+        .copy-btn:hover {
+            background: rgba(139, 92, 246, 0.2);
+        }
+
+        pre {
+            background: var(--bg3);
+            border: 1px solid var(--border);
+            border-radius: 0 0 6px 6px;
+            padding: 18px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 12px;
+            line-height: 1.75;
+            color: var(--accent3);
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        /* ── EMPTY / ERROR ── */
+        .empty-state {
+            text-align: center;
+            color: var(--text3);
+            font-style: italic;
+            font-size: 15px;
+        }
+
+        .error-box {
+            background: rgba(248, 113, 113, 0.06);
+            border: 1px solid rgba(248, 113, 113, 0.25);
+            border-radius: 8px;
+            padding: 16px 20px;
+            color: var(--danger);
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        /* ── SCROLLBAR ── */
+        ::-webkit-scrollbar {
+            width: 5px;
+            height: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--bg);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--bg4);
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent);
+        }
+
+        /* ── RESPONSIVE ── */
+        @media(max-width:640px) {
+            .form-card {
+                padding: 24px 18px;
+            }
+
+            .card-top {
+                grid-template-columns: 1fr;
+            }
+
+            .card-body {
+                grid-template-columns: 1fr;
+            }
+
+            .hero {
+                padding: 48px 0 36px;
+            }
+
+            .rank-num {
+                display: none;
+            }
+
+            pre {
+                font-size: 11px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Neural Network Background SVG -->
+    <svg class="bg-neural" viewBox="0 0 480 900" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#8b5cf6" fill="none">
+            <!-- Input layer -->
+            <circle cx="60" cy="150" r="16" stroke-width="1.5" />
+            <circle cx="60" cy="260" r="16" stroke-width="1.5" />
+            <circle cx="60" cy="370" r="16" stroke-width="1.5" />
+            <circle cx="60" cy="480" r="16" stroke-width="1.5" />
+            <circle cx="60" cy="590" r="16" stroke-width="1.5" />
+            <!-- Hidden 1 -->
+            <circle cx="200" cy="100" r="16" stroke-width="1.5" />
+            <circle cx="200" cy="210" r="16" stroke-width="1.5" />
+            <circle cx="200" cy="320" r="16" stroke-width="1.5" />
+            <circle cx="200" cy="430" r="16" stroke-width="1.5" />
+            <circle cx="200" cy="540" r="16" stroke-width="1.5" />
+            <circle cx="200" cy="650" r="16" stroke-width="1.5" />
+            <!-- Hidden 2 -->
+            <circle cx="340" cy="180" r="16" stroke-width="1.5" />
+            <circle cx="340" cy="310" r="16" stroke-width="1.5" />
+            <circle cx="340" cy="440" r="16" stroke-width="1.5" />
+            <circle cx="340" cy="570" r="16" stroke-width="1.5" />
+            <!-- Output -->
+            <circle cx="450" cy="260" r="18" stroke-width="2" />
+            <circle cx="450" cy="400" r="18" stroke-width="2" />
+            <circle cx="450" cy="540" r="18" stroke-width="2" />
+        </g>
+        <!-- Connections input→h1 -->
+        <g stroke="#8b5cf6" stroke-width="0.6" opacity="0.5">
+            <line x1="76" y1="150" x2="184" y2="100" />
+            <line x1="76" y1="150" x2="184" y2="210" />
+            <line x1="76" y1="150" x2="184" y2="320" />
+            <line x1="76" y1="260" x2="184" y2="100" />
+            <line x1="76" y1="260" x2="184" y2="210" />
+            <line x1="76" y1="260" x2="184" y2="320" />
+            <line x1="76" y1="260" x2="184" y2="430" />
+            <line x1="76" y1="370" x2="184" y2="210" />
+            <line x1="76" y1="370" x2="184" y2="320" />
+            <line x1="76" y1="370" x2="184" y2="430" />
+            <line x1="76" y1="370" x2="184" y2="540" />
+            <line x1="76" y1="480" x2="184" y2="320" />
+            <line x1="76" y1="480" x2="184" y2="430" />
+            <line x1="76" y1="480" x2="184" y2="540" />
+            <line x1="76" y1="480" x2="184" y2="650" />
+            <line x1="76" y1="590" x2="184" y2="430" />
+            <line x1="76" y1="590" x2="184" y2="540" />
+            <line x1="76" y1="590" x2="184" y2="650" />
+        </g>
+        <!-- Connections h1→h2 -->
+        <g stroke="#8b5cf6" stroke-width="0.6" opacity="0.4">
+            <line x1="216" y1="100" x2="324" y2="180" />
+            <line x1="216" y1="100" x2="324" y2="310" />
+            <line x1="216" y1="210" x2="324" y2="180" />
+            <line x1="216" y1="210" x2="324" y2="310" />
+            <line x1="216" y1="320" x2="324" y2="180" />
+            <line x1="216" y1="320" x2="324" y2="310" />
+            <line x1="216" y1="320" x2="324" y2="440" />
+            <line x1="216" y1="430" x2="324" y2="310" />
+            <line x1="216" y1="430" x2="324" y2="440" />
+            <line x1="216" y1="540" x2="324" y2="440" />
+            <line x1="216" y1="540" x2="324" y2="570" />
+            <line x1="216" y1="650" x2="324" y2="570" />
+        </g>
+        <!-- Connections h2→output -->
+        <g stroke="#8b5cf6" stroke-width="1" opacity="0.6">
+            <line x1="356" y1="180" x2="432" y2="260" />
+            <line x1="356" y1="180" x2="432" y2="400" />
+            <line x1="356" y1="310" x2="432" y2="260" />
+            <line x1="356" y1="310" x2="432" y2="400" />
+            <line x1="356" y1="440" x2="432" y2="400" />
+            <line x1="356" y1="440" x2="432" y2="540" />
+            <line x1="356" y1="570" x2="432" y2="400" />
+            <line x1="356" y1="570" x2="432" y2="540" />
+        </g>
+        <!-- Active nodes -->
+        <circle cx="60" cy="370" r="6" fill="#8b5cf6" opacity="0.6" />
+        <circle cx="200" cy="320" r="6" fill="#8b5cf6" opacity="0.6" />
+        <circle cx="340" cy="440" r="6" fill="#8b5cf6" opacity="0.6" />
+        <circle cx="450" cy="400" r="8" fill="#8b5cf6" opacity="0.7" />
+        <!-- Layer labels -->
+        <text x="60" y="640" font-family="Times New Roman" font-size="10" fill="#8b5cf6" text-anchor="middle"
+            font-style="italic">Input</text>
+        <text x="200" y="710" font-family="Times New Roman" font-size="10" fill="#8b5cf6" text-anchor="middle"
+            font-style="italic">Hidden</text>
+        <text x="340" y="630" font-family="Times New Roman" font-size="10" fill="#8b5cf6" text-anchor="middle"
+            font-style="italic">Hidden</text>
+        <text x="450" y="600" font-family="Times New Roman" font-size="10" fill="#8b5cf6" text-anchor="middle"
+            font-style="italic">Output</text>
+    </svg>
+
+    <!-- Scatter plot bottom-left -->
+    <svg class="bg-scatter" viewBox="0 0 300 350" xmlns="http://www.w3.org/2000/svg">
+        <g stroke="#8b5cf6" fill="none">
+            <line x1="30" y1="300" x2="270" y2="300" stroke-width="1.2" />
+            <line x1="30" y1="20" x2="30" y2="300" stroke-width="1.2" />
+            <!-- Cluster 1 -->
+            <circle cx="70" cy="80" r="5" stroke-width="1.5" />
+            <circle cx="90" cy="65" r="5" stroke-width="1.5" />
+            <circle cx="80" cy="100" r="5" stroke-width="1.5" />
+            <circle cx="60" cy="72" r="5" stroke-width="1.5" />
+            <circle cx="100" cy="85" r="5" stroke-width="1.5" />
+            <!-- Cluster 2 -->
+            <circle cx="180" cy="140" r="5" fill="#8b5cf6" opacity="0.4" stroke="none" />
+            <circle cx="200" cy="120" r="5" fill="#8b5cf6" opacity="0.4" stroke="none" />
+            <circle cx="190" cy="160" r="5" fill="#8b5cf6" opacity="0.4" stroke="none" />
+            <circle cx="170" cy="132" r="5" fill="#8b5cf6" opacity="0.4" stroke="none" />
+            <circle cx="210" cy="148" r="5" fill="#8b5cf6" opacity="0.4" stroke="none" />
+            <!-- Decision boundary -->
+            <line x1="40" y1="200" x2="260" y2="80" stroke-width="1.2" stroke-dasharray="6,4" />
+            <!-- Regression line -->
+            <polyline points="40,260 80,240 120,215 160,188 200,162 240,138" stroke-width="1.5"
+                stroke-dasharray="4,3" />
+            <circle cx="50" cy="255" r="3" fill="#8b5cf6" opacity="0.5" stroke="none" />
+            <circle cx="90" cy="235" r="3" fill="#8b5cf6" opacity="0.5" stroke="none" />
+            <circle cx="130" cy="210" r="3" fill="#8b5cf6" opacity="0.5" stroke="none" />
+            <circle cx="170" cy="182" r="3" fill="#8b5cf6" opacity="0.5" stroke="none" />
+            <circle cx="210" cy="158" r="3" fill="#8b5cf6" opacity="0.5" stroke="none" />
+        </g>
+    </svg>
+
+    <div class="wrap">
+
+        <!-- HOME -->
+        <section class="home">
+            <h1>ML Algorithm<em> Recommender</em></h1>
+            <h1>Find the <em>right algorithm</em><br>for your problem</h1>
+            <p class="hero-sub">Answer three questions. Get ranked algorithm recommendations with reasoning, pros, cons,
+                and ready-to-run Python code.</p>
+        </section>
+
+        <!-- FORM -->
+        <div class="form-card">
+            <div class="form-label">Configure your problem</div>
+            <div class="inputs-grid">
+                <div class="input-group">
+                    <label>1. Problem Type</label>
+                    <div class="select-wrap">
+                        <select id="problem">
+                            <option value="">Select...</option>
+                            <option value="classification">Classification</option>
+                            <option value="regression">Regression</option>
+                            <option value="clustering">Clustering</option>
+                            <option value="dimensionality">Dimensionality Reduction</option>
+                            <option value="anomaly">Anomaly Detection</option>
+                            <option value="nlp">NLP / Text</option>
+                            <option value="timeseries">Time Series</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>2. Data Type</label>
+                    <div class="select-wrap">
+                        <select id="datatype">
+                            <option value="">Select...</option>
+                            <option value="tabular">Tabular / Structured</option>
+                            <option value="text">Text</option>
+                            <option value="image">Image</option>
+                            <option value="timeseries">Time Series</option>
+                            <option value="mixed">Mixed</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>3. Dataset Size</label>
+                    <div class="select-wrap">
+                        <select id="size">
+                            <option value="">Select...</option>
+                            <option value="small">Small (&lt; 1,000 rows)</option>
+                            <option value="medium">Medium (1k – 100k)</option>
+                            <option value="large">Large (&gt; 100k)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            <button class="btn-run" onclick="recommend()">
+                Find Algorithms <span class="btn-arrow">→</span>
+            </button>
+        </div>
+
+        <!-- RESULTS -->
+        <section id="results">
+            <div class="empty-state">
+                Select your inputs above and click <em>Find Algorithms</em> to see recommendations.
+            </div>
+        </section>
+
+    </div>
+
+
+    <script>
+        const DB = {
+            classification: {
+                tabular: { small: ["logistic_regression", "decision_tree", "svm"], medium: ["random_forest", "gradient_boosting", "logistic_regression"], large: ["xgboost", "lightgbm", "neural_net"] },
+                text: { small: ["naive_bayes", "logistic_regression", "svm"], medium: ["tfidf_lr", "svm", "random_forest"], large: ["bert", "tfidf_lr", "lightgbm"] },
+                image: { small: ["svm", "knn", "decision_tree"], medium: ["cnn", "svm", "random_forest"], large: ["resnet", "cnn", "lightgbm"] },
+                timeseries: { small: ["logistic_regression", "decision_tree", "svm"], medium: ["random_forest", "gradient_boosting", "logistic_regression"], large: ["xgboost", "lightgbm", "neural_net"] },
+                mixed: { small: ["random_forest", "decision_tree", "logistic_regression"], medium: ["gradient_boosting", "random_forest", "svm"], large: ["xgboost", "lightgbm", "neural_net"] }
+            },
+            regression: {
+                tabular: { small: ["linear_regression", "ridge", "decision_tree_reg"], medium: ["random_forest_reg", "gradient_boosting_reg", "ridge"], large: ["xgboost_reg", "lightgbm_reg", "neural_net"] },
+                text: { small: ["ridge", "lasso", "linear_regression"], medium: ["ridge", "random_forest_reg", "gradient_boosting_reg"], large: ["lightgbm_reg", "xgboost_reg", "bert"] },
+                image: { small: ["ridge", "svm_reg", "knn_reg"], medium: ["cnn_reg", "random_forest_reg", "svm_reg"], large: ["resnet", "cnn_reg", "neural_net"] },
+                timeseries: { small: ["arima", "linear_regression", "ridge"], medium: ["prophet", "xgboost_reg", "random_forest_reg"], large: ["lstm", "prophet", "xgboost_reg"] },
+                mixed: { small: ["linear_regression", "ridge", "decision_tree_reg"], medium: ["random_forest_reg", "gradient_boosting_reg", "ridge"], large: ["xgboost_reg", "lightgbm_reg", "neural_net"] }
+            },
+            clustering: {
+                tabular: { small: ["kmeans", "hierarchical", "dbscan"], medium: ["kmeans", "dbscan", "gaussian_mixture"], large: ["minibatch_kmeans", "dbscan", "gaussian_mixture"] },
+                text: { small: ["kmeans", "lda_topic", "hierarchical"], medium: ["kmeans", "lda_topic", "dbscan"], large: ["lda_topic", "minibatch_kmeans", "dbscan"] },
+                image: { small: ["kmeans", "hierarchical", "dbscan"], medium: ["kmeans", "dbscan", "gaussian_mixture"], large: ["minibatch_kmeans", "dbscan", "gaussian_mixture"] },
+                timeseries: { small: ["kmeans", "hierarchical", "dbscan"], medium: ["kmeans", "dbscan", "gaussian_mixture"], large: ["minibatch_kmeans", "dbscan", "gaussian_mixture"] },
+                mixed: { small: ["kmeans", "dbscan", "hierarchical"], medium: ["kmeans", "dbscan", "gaussian_mixture"], large: ["minibatch_kmeans", "dbscan", "gaussian_mixture"] }
+            },
+            dimensionality: {
+                tabular: { small: ["pca", "tsne", "lda_dim"], medium: ["pca", "umap", "lda_dim"], large: ["pca", "umap", "autoencoder"] },
+                text: { small: ["pca", "lsa", "nmf"], medium: ["pca", "lsa", "umap"], large: ["pca", "umap", "autoencoder"] },
+                image: { small: ["pca", "tsne", "umap"], medium: ["umap", "pca", "autoencoder"], large: ["autoencoder", "umap", "pca"] },
+                timeseries: { small: ["pca", "tsne", "umap"], medium: ["pca", "umap", "autoencoder"], large: ["autoencoder", "umap", "pca"] },
+                mixed: { small: ["pca", "tsne", "umap"], medium: ["pca", "umap", "lsa"], large: ["umap", "pca", "autoencoder"] }
+            },
+            anomaly: {
+                tabular: { small: ["isolation_forest", "lof", "one_class_svm"], medium: ["isolation_forest", "autoencoder_anom", "lof"], large: ["isolation_forest", "autoencoder_anom", "lightgbm"] },
+                text: { small: ["one_class_svm", "isolation_forest", "lof"], medium: ["isolation_forest", "autoencoder_anom", "one_class_svm"], large: ["autoencoder_anom", "isolation_forest", "bert"] },
+                image: { small: ["isolation_forest", "lof", "one_class_svm"], medium: ["autoencoder_anom", "isolation_forest", "lof"], large: ["autoencoder_anom", "isolation_forest", "lof"] },
+                timeseries: { small: ["isolation_forest", "lof", "arima_anom"], medium: ["isolation_forest", "lstm_anom", "lof"], large: ["lstm_anom", "isolation_forest", "autoencoder_anom"] },
+                mixed: { small: ["isolation_forest", "lof", "one_class_svm"], medium: ["isolation_forest", "autoencoder_anom", "lof"], large: ["isolation_forest", "autoencoder_anom", "lightgbm"] }
+            },
+            nlp: {
+                tabular: { small: ["tfidf_lr", "naive_bayes", "svm"], medium: ["tfidf_lr", "random_forest", "bert"], large: ["bert", "lightgbm", "xgboost"] },
+                text: { small: ["naive_bayes", "tfidf_lr", "svm"], medium: ["bert", "tfidf_lr", "random_forest"], large: ["bert", "tfidf_lr", "lightgbm"] },
+                image: { small: ["tfidf_lr", "naive_bayes", "svm"], medium: ["tfidf_lr", "bert", "random_forest"], large: ["bert", "lightgbm", "xgboost"] },
+                timeseries: { small: ["tfidf_lr", "naive_bayes", "svm"], medium: ["tfidf_lr", "bert", "lstm"], large: ["bert", "tfidf_lr", "lstm"] },
+                mixed: { small: ["naive_bayes", "tfidf_lr", "svm"], medium: ["bert", "tfidf_lr", "random_forest"], large: ["bert", "lightgbm", "xgboost"] }
+            },
+            timeseries: {
+                tabular: { small: ["arima", "linear_regression", "ridge"], medium: ["prophet", "xgboost_reg", "random_forest_reg"], large: ["lstm", "prophet", "xgboost_reg"] },
+                text: { small: ["arima", "linear_regression", "ridge"], medium: ["prophet", "lstm", "xgboost_reg"], large: ["lstm", "bert", "prophet"] },
+                image: { small: ["linear_regression", "ridge", "arima"], medium: ["cnn_reg", "lstm", "prophet"], large: ["lstm", "cnn_reg", "prophet"] },
+                timeseries: { small: ["arima", "exp_smoothing", "linear_regression"], medium: ["prophet", "xgboost_reg", "lstm"], large: ["lstm", "prophet", "xgboost_reg"] },
+                mixed: { small: ["arima", "linear_regression", "prophet"], medium: ["prophet", "xgboost_reg", "lstm"], large: ["lstm", "prophet", "xgboost_reg"] }
+            }
+        };
+
+        const ALGOS = {
+            logistic_regression: {
+                name: "Logistic Regression", reason: "The essential first model for classification. Fast, interpretable, and establishes a reliable baseline before trying anything complex.", pros: ["Extremely fast to train", "Fully interpretable coefficients", "Works well on small data", "Low overfitting risk"], cons: ["Assumes linear decision boundary", "Poor on complex non-linear patterns", "Requires feature scaling", "Sensitive to multicollinearity"], code: `from sklearn.linear_model import LogisticRegression
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import classification_report
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test  = scaler.transform(X_test)
+
+model = LogisticRegression(max_iter=1000, C=1.0)
+model.fit(X_train, y_train)
+print(classification_report(y_test, model.predict(X_test)))`},
+            decision_tree: {
+                name: "Decision Tree", reason: "A tree that splits data by feature thresholds. Every decision is traceable — ideal when you must explain each prediction clearly.", pros: ["Fully visualizable and explainable", "No feature scaling needed", "Handles mixed feature types", "Fast prediction"], cons: ["Prone to overfitting without pruning", "Unstable with small data changes", "Biased on imbalanced classes", "Poor generalization"], code: `from sklearn.tree import DecisionTreeClassifier, export_text
+from sklearn.metrics import classification_report
+
+model = DecisionTreeClassifier(max_depth=5, min_samples_split=10, random_state=42)
+model.fit(X_train, y_train)
+print(classification_report(y_test, model.predict(X_test)))
+print(export_text(model))`},
+            svm: {
+                name: "Support Vector Machine", reason: "Finds the maximum-margin hyperplane between classes. Powerful in high-dimensional spaces — especially effective for text and small structured datasets.", pros: ["Works well in high dimensions", "Effective on small datasets", "Robust to overfitting", "Flexible via kernels"], cons: ["Slow on large data O(n²–n³)", "Difficult to interpret", "Requires feature scaling", "Kernel selection non-trivial"], code: `from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import classification_report
+
+model = Pipeline([('scaler', StandardScaler()), ('svm', SVC(kernel='rbf', C=1.0, gamma='scale', probability=True))])
+model.fit(X_train, y_train)
+print(classification_report(y_test, model.predict(X_test)))`},
+            random_forest: {
+                name: "Random Forest", reason: "Ensemble of decision trees trained on random subsets. Reduces overfitting via bagging. Reliable default for medium tabular classification with minimal tuning.", pros: ["Controls overfitting effectively", "No feature scaling needed", "Feature importance built-in", "Parallelizable training"], cons: ["Slower than a single tree", "Less interpretable", "High memory usage", "Slower on very large data"], code: `from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report
+
+model = RandomForestClassifier(n_estimators=200, random_state=42, n_jobs=-1)
+model.fit(X_train, y_train)
+print(classification_report(y_test, model.predict(X_test)))`},
+            gradient_boosting: {
+                name: "Gradient Boosting", reason: "Builds trees sequentially, each correcting the previous tree's errors. Achieves high accuracy on structured data through iterative refinement.", pros: ["High accuracy on tabular data", "Handles mixed feature types", "Good with class imbalance", "Feature importance included"], cons: ["Slow — sequential training", "Many hyperparameters", "Can overfit without regularization", "Less interpretable"], code: `from sklearn.ensemble import GradientBoostingClassifier
+from sklearn.metrics import classification_report
+
+model = GradientBoostingClassifier(n_estimators=200, learning_rate=0.05, max_depth=4, random_state=42)
+model.fit(X_train, y_train)
+print(classification_report(y_test, model.predict(X_test)))`},
+            xgboost: {
+                name: "XGBoost", reason: "Industry-standard gradient boosting with built-in regularization and native missing value handling. The most common winning solution in tabular ML competitions.", pros: ["Best-in-class tabular accuracy", "Handles missing values natively", "L1/L2 regularization built-in", "GPU support available"], cons: ["Many hyperparameters to tune", "Can overfit without care", "Less interpretable", "External library dependency"], code: `import xgboost as xgb
+from sklearn.metrics import classification_report
+
+model = xgb.XGBClassifier(n_estimators=300, learning_rate=0.05, max_depth=6, subsample=0.8, eval_metric='logloss', random_state=42)
+model.fit(X_train, y_train, eval_set=[(X_test, y_test)], verbose=False)
+print(classification_report(y_test, model.predict(X_test)))`},
+            lightgbm: {
+                name: "LightGBM", reason: "Leaf-wise gradient boosting optimized for large datasets. Faster and more memory-efficient than XGBoost with competitive accuracy on very large data.", pros: ["Fastest gradient boosting on large data", "Very low memory usage", "Native categorical support", "GPU-accelerated"], cons: ["Can overfit small datasets", "Hyperparameter sensitive", "Less interpretable", "Needs tuning on noisy data"], code: `import lightgbm as lgb
+from sklearn.metrics import classification_report
+
+model = lgb.LGBMClassifier(n_estimators=300, learning_rate=0.05, num_leaves=63, random_state=42)
+model.fit(X_train, y_train, eval_set=[(X_test, y_test)])
+print(classification_report(y_test, model.predict(X_test)))`},
+            naive_bayes: {
+                name: "Naive Bayes", reason: "Probabilistic classifier based on Bayes' theorem. Assumes feature independence — naive, but surprisingly effective for text classification with small data.", pros: ["Extremely fast", "Works on very small data", "Excellent for text/NLP", "No hyperparameter tuning"], cons: ["Independence assumption rarely holds", "Limited accuracy ceiling", "Poor calibration of probabilities", "Bad on correlated features"], code: `from sklearn.naive_bayes import MultinomialNB
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+
+model = Pipeline([('tfidf', TfidfVectorizer(max_features=10000, ngram_range=(1,2))), ('nb', MultinomialNB(alpha=1.0))])
+model.fit(X_train, y_train)
+print("Accuracy:", model.score(X_test, y_test))`},
+            tfidf_lr: {
+                name: "TF-IDF + Logistic Regression", reason: "Battle-tested NLP pipeline. TF-IDF converts text to weighted vectors; Logistic Regression classifies. Strong baseline, no GPU required.", pros: ["Fast and interpretable", "No GPU required", "Strong NLP baseline", "Easy to deploy"], cons: ["No semantic understanding", "Ignores word order", "Cannot capture negation", "Lower ceiling than transformers"], code: `from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import classification_report
+
+model = Pipeline([('tfidf', TfidfVectorizer(max_features=20000, ngram_range=(1,2), sublinear_tf=True)), ('lr', LogisticRegression(max_iter=1000, C=1.0))])
+model.fit(X_train, y_train)
+print(classification_report(y_test, model.predict(X_test)))`},
+            bert: {
+                name: "BERT (HuggingFace)", reason: "Bidirectional transformer pre-trained on billions of tokens. Understands context, semantics, and nuance — gold standard for NLP classification.", pros: ["Best-in-class NLP accuracy", "Pre-trained on massive corpora", "Understands semantic context", "Transfer learning with minimal data"], cons: ["Slow fine-tuning without GPU", "Large model (110M–340M params)", "Complex setup", "Overkill for simple tasks"], code: `from transformers import pipeline
+
+classifier = pipeline('text-classification', model='distilbert-base-uncased-finetuned-sst-2-english')
+results = classifier(["Your text here"])
+print(results)`},
+            knn: {
+                name: "K-Nearest Neighbors", reason: "No training — classifies by majority vote among k nearest neighbors. Simple and effective on small datasets with clear local structure.", pros: ["Zero training time", "Non-parametric — no assumptions", "Naturally multi-class", "Simple to understand"], cons: ["Very slow prediction O(n)", "High memory usage", "Sensitive to irrelevant features", "Needs feature scaling"], code: `from sklearn.neighbors import KNeighborsClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+model = Pipeline([('scaler', StandardScaler()), ('knn', KNeighborsClassifier(n_neighbors=5))])
+model.fit(X_train, y_train)
+print("Accuracy:", model.score(X_test, y_test))`},
+            cnn: {
+                name: "CNN (Convolutional Neural Network)", reason: "Convolutional layers learn spatial hierarchies automatically. Standard architecture for image classification. Use pre-trained models for best results.", pros: ["State-of-the-art on images", "Learns spatial features automatically", "Transfer learning from ImageNet", "Scalable"], cons: ["Requires GPU", "Needs significant labeled data", "Black box", "Long training times"], code: `import torchvision.models as models
+import torch.nn as nn
+
+model = models.resnet18(pretrained=True)
+for p in model.parameters(): p.requires_grad = False
+model.fc = nn.Linear(512, num_classes)`},
+            resnet: {
+                name: "ResNet50", reason: "Deep residual network with skip connections. Pre-trained on ImageNet — best accuracy for complex visual classification with transfer learning.", pros: ["Very high image accuracy", "Skip connections prevent vanishing gradients", "Pre-trained ImageNet weights", "Well documented"], cons: ["Requires GPU", "Large memory footprint", "Long training", "Domain shift needs fine-tuning"], code: `import torchvision.models as models
+import torch.nn as nn
+
+model = models.resnet50(pretrained=True)
+for p in model.parameters(): p.requires_grad = False
+model.fc = nn.Sequential(nn.Dropout(0.5), nn.Linear(2048, num_classes))`},
+            neural_net: {
+                name: "MLP Neural Network", reason: "Multi-layer perceptron for complex non-linear patterns. Use when simpler models hit their accuracy ceiling and more data is available.", pros: ["Learns highly complex patterns", "Flexible architecture", "Scales with data", "Universal function approximator"], cons: ["Needs large data", "Slow training", "Many hyperparameters", "Black box"], code: `from sklearn.neural_network import MLPClassifier
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+model = Pipeline([('scaler', StandardScaler()), ('mlp', MLPClassifier(hidden_layer_sizes=(256,128,64), activation='relu', max_iter=500, early_stopping=True, random_state=42))])
+model.fit(X_train, y_train)
+print("Accuracy:", model.score(X_test, y_test))`},
+            linear_regression: {
+                name: "Linear Regression", reason: "The foundational regression model. Fast, interpretable, and effective when the relationship between features and target is approximately linear.", pros: ["Extremely fast", "Fully interpretable coefficients", "No overfitting on small data", "Easy to deploy"], cons: ["Assumes linear relationship", "Sensitive to outliers", "Poor on complex patterns", "Needs feature scaling"], code: `from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
+
+model = LinearRegression()
+model.fit(X_train, y_train)
+preds = model.predict(X_test)
+print(f"RMSE: {np.sqrt(mean_squared_error(y_test, preds)):.4f}")
+print(f"R²:   {r2_score(y_test, preds):.4f}")`},
+            ridge: {
+                name: "Ridge Regression", reason: "L2-regularized linear regression. Prevents overfitting when features are many or correlated — the reliable upgrade over plain Linear Regression.", pros: ["Handles multicollinearity", "Simple alpha hyperparameter", "Stable predictions", "Fast training"], cons: ["Still assumes linearity", "No feature selection", "Needs scaling", "Not for complex patterns"], code: `from sklearn.linear_model import RidgeCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+model = Pipeline([('scaler', StandardScaler()), ('ridge', RidgeCV(alphas=[0.01,0.1,1,10,100], cv=5))])
+model.fit(X_train, y_train)
+print(f"Best alpha: {model['ridge'].alpha_}")`},
+            lasso: {
+                name: "Lasso Regression", reason: "L1 regularization drives unimportant coefficients to zero — automatic feature selection for interpretable sparse models.", pros: ["Automatic feature selection", "Sparse interpretable output", "Handles many features", "Simple to tune"], cons: ["Unstable with correlated features", "May discard useful features", "Assumes linearity", "Needs scaling"], code: `from sklearn.linear_model import LassoCV
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+model = Pipeline([('scaler', StandardScaler()), ('lasso', LassoCV(cv=5, max_iter=5000))])
+model.fit(X_train, y_train)
+print(f"Best alpha: {model['lasso'].alpha_:.4f}")`},
+            decision_tree_reg: {
+                name: "Decision Tree Regressor", reason: "Partitions feature space into rectangular regions. Interpretable and handles non-linear relationships without feature scaling.", pros: ["No scaling required", "Captures non-linearity", "Fully interpretable", "Handles missing values"], cons: ["Prone to overfitting", "High variance", "Poor extrapolation", "Piecewise constant output"], code: `from sklearn.tree import DecisionTreeRegressor
+from sklearn.metrics import mean_squared_error, r2_score
+import numpy as np
+
+model = DecisionTreeRegressor(max_depth=6, min_samples_leaf=10, random_state=42)
+model.fit(X_train, y_train)
+print(f"RMSE: {np.sqrt(mean_squared_error(y_test, model.predict(X_test))):.4f}")`},
+            random_forest_reg: {
+                name: "Random Forest Regressor", reason: "Ensemble of decision trees for regression. Handles noise and non-linear relationships without much tuning — strong default for tabular data.", pros: ["No scaling needed", "Handles non-linearity", "Feature importance built-in", "Robust to outliers"], cons: ["Slower prediction", "High memory", "Cannot extrapolate", "Less interpretable"], code: `from sklearn.ensemble import RandomForestRegressor
+from sklearn.metrics import r2_score
+
+model = RandomForestRegressor(n_estimators=200, min_samples_leaf=5, random_state=42, n_jobs=-1)
+model.fit(X_train, y_train)
+print(f"R²: {r2_score(y_test, model.predict(X_test)):.4f}")`},
+            gradient_boosting_reg: {
+                name: "Gradient Boosting Regressor", reason: "Sequential error-correcting regression. High accuracy on structured data — each tree learns from the residuals of the previous.", pros: ["High accuracy", "Mixed feature types", "Robust to outliers", "Feature importance"], cons: ["Slow sequential training", "Many hyperparameters", "Can overfit", "Less interpretable"], code: `from sklearn.ensemble import GradientBoostingRegressor
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+model = GradientBoostingRegressor(n_estimators=300, learning_rate=0.05, max_depth=4, loss='huber', random_state=42)
+model.fit(X_train, y_train)
+print(f"RMSE: {np.sqrt(mean_squared_error(y_test, model.predict(X_test))):.4f}")`},
+            xgboost_reg: {
+                name: "XGBoost Regressor", reason: "State-of-the-art gradient boosting for regression. Fastest and most accurate for large tabular datasets with built-in cross-validation support.", pros: ["Best-in-class tabular accuracy", "Handles missing values", "Built-in CV", "GPU support"], cons: ["Many hyperparameters", "Can overfit", "Less interpretable", "External library"], code: `import xgboost as xgb
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+model = xgb.XGBRegressor(n_estimators=500, learning_rate=0.03, max_depth=6, subsample=0.8, random_state=42)
+model.fit(X_train, y_train, eval_set=[(X_test, y_test)], early_stopping_rounds=50, verbose=False)
+print(f"RMSE: {np.sqrt(mean_squared_error(y_test, model.predict(X_test))):.4f}")`},
+            lightgbm_reg: {
+                name: "LightGBM Regressor", reason: "Leaf-wise gradient boosting for large regression datasets. Memory-efficient and achieves better accuracy than level-wise methods at high speed.", pros: ["Fastest on large data", "Low memory", "Native categoricals", "Excellent accuracy"], cons: ["Overfits small data", "Hyperparameter sensitive", "Less interpretable", "Needs tuning"], code: `import lightgbm as lgb
+from sklearn.metrics import mean_squared_error
+import numpy as np
+
+model = lgb.LGBMRegressor(n_estimators=500, learning_rate=0.03, num_leaves=63, random_state=42)
+model.fit(X_train, y_train, eval_set=[(X_test, y_test)], callbacks=[lgb.early_stopping(50)])
+print(f"RMSE: {np.sqrt(mean_squared_error(y_test, model.predict(X_test))):.4f}")`},
+            svm_reg: {
+                name: "Support Vector Regression", reason: "SVM adapted for regression using an epsilon-insensitive loss. Robust to outliers and effective on small high-dimensional datasets.", pros: ["Robust to outliers", "Works in high dimensions", "Flexible kernels", "Good on small data"], cons: ["Slow on large data", "Needs scaling", "Kernel selection complex", "Memory intensive"], code: `from sklearn.svm import SVR
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+model = Pipeline([('scaler', StandardScaler()), ('svr', SVR(kernel='rbf', C=100, epsilon=0.1))])
+model.fit(X_train, y_train)
+print(f"R²: {model.score(X_test, y_test):.4f}")`},
+            knn_reg: {
+                name: "KNN Regressor", reason: "Predicts by averaging the k nearest neighbors' values. Zero training, no distributional assumptions — simple and effective on small data.", pros: ["Zero training time", "No assumptions", "Adapts to local patterns", "Simple"], cons: ["Slow prediction O(n)", "High memory", "Curse of dimensionality", "Needs scaling"], code: `from sklearn.neighbors import KNeighborsRegressor
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
+
+model = Pipeline([('scaler', StandardScaler()), ('knn', KNeighborsRegressor(n_neighbors=5, weights='distance'))])
+model.fit(X_train, y_train)
+print(f"R²: {model.score(X_test, y_test):.4f}")`},
+            cnn_reg: {
+                name: "CNN Regressor", reason: "Convolutional network adapted for regression on image data. Predicts a continuous value from visual input using pre-trained spatial features.", pros: ["Learns spatial features", "Transfer learning", "Scalable", "State-of-the-art visual regression"], cons: ["Requires GPU", "Needs labeled data", "Complex setup", "Black box"], code: `import torchvision.models as models
+import torch.nn as nn
+
+model = models.resnet18(pretrained=True)
+for p in model.parameters(): p.requires_grad = False
+model.fc = nn.Sequential(nn.Linear(512, 128), nn.ReLU(), nn.Dropout(0.3), nn.Linear(128, 1))`},
+            arima: {
+                name: "ARIMA", reason: "Classic statistical model for univariate time series. Always the correct starting point before any ML method is considered for forecasting.", pros: ["Works on small data", "No ML needed", "Interpretable", "Well-established"], cons: ["Univariate only", "Requires stationarity", "Manual p,d,q selection", "Poor on complex seasonality"], code: `from statsmodels.tsa.arima.model import ARIMA
+import numpy as np
+
+model  = ARIMA(train_series, order=(1, 1, 1))
+result = model.fit()
+forecast = result.forecast(steps=len(test_series))
+print(f"MAE: {np.mean(np.abs(forecast - test_series)):.4f}")`},
+            exp_smoothing: {
+                name: "Exponential Smoothing", reason: "Gives more weight to recent observations. Handles trend and seasonality components explicitly with minimal configuration.", pros: ["Handles trend and seasonality", "Very simple", "Robust to missing data", "Fast"], cons: ["Univariate only", "Limited complexity", "Needs seasonality period", "Manual configuration"], code: `from statsmodels.tsa.holtwinters import ExponentialSmoothing
+import numpy as np
+
+model    = ExponentialSmoothing(train_series, trend='add', seasonal='add', seasonal_periods=12)
+result   = model.fit()
+forecast = result.forecast(steps=len(test_series))
+print(f"MAPE: {np.mean(np.abs((test_series-forecast)/test_series))*100:.2f}%")`},
+            prophet: {
+                name: "Prophet", reason: "Meta's forecasting model. Auto-detects seasonality, trend changes, and holiday effects. Designed for business time series with minimal configuration.", pros: ["Auto-detects seasonality", "Handles missing data", "Holiday effects built-in", "Uncertainty intervals"], cons: ["Univariate target", "Slower than ARIMA", "Specific column names required", "May over-smooth"], code: `from prophet import Prophet
+import pandas as pd
+
+df     = pd.DataFrame({'ds': dates, 'y': values})
+model  = Prophet(yearly_seasonality=True, weekly_seasonality=True, changepoint_prior_scale=0.05)
+model.fit(df)
+future   = model.make_future_dataframe(periods=90)
+forecast = model.predict(future)`},
+            lstm: {
+                name: "LSTM", reason: "Long Short-Term Memory recurrent network. Captures long-range temporal dependencies. Best ML choice for complex multivariate time series.", pros: ["Captures long-term patterns", "Multivariate support", "Highly flexible", "State-of-the-art on sequences"], cons: ["Needs large data", "Slow without GPU", "Hard to tune", "Black box"], code: `import torch.nn as nn
+
+class LSTMForecaster(nn.Module):
+    def __init__(self, input_size, hidden=64, layers=2, output=1):
+        super().__init__()
+        self.lstm = nn.LSTM(input_size, hidden, layers, batch_first=True, dropout=0.2)
+        self.fc   = nn.Linear(hidden, output)
+    def forward(self, x):
+        out, _ = self.lstm(x)
+        return self.fc(out[:, -1, :])`},
+            lstm_anom: {
+                name: "LSTM Anomaly Detection", reason: "Train LSTM to predict normal sequences; high prediction error flags anomalies. Best for complex multivariate time series anomaly detection.", pros: ["Handles multivariate series", "Captures temporal patterns", "Scalable", "Detects subtle deviations"], cons: ["Needs substantial normal data", "Threshold tuning non-trivial", "Slow without GPU", "Black box"], code: `import torch, numpy as np
+
+# High reconstruction/prediction error = anomaly
+with torch.no_grad():
+    preds  = model(X_tensor)
+    errors = ((X_tensor - preds)**2).mean(dim=(1,2)).numpy()
+
+threshold = np.percentile(train_errors, 95)
+anomalies = errors > threshold`},
+            kmeans: {
+                name: "K-Means", reason: "Fast centroid-based clustering. The correct default when approximate cluster count is known and data is roughly spherical.", pros: ["Very fast O(nkd)", "Simple to understand", "Scales to large datasets", "Deterministic with seed"], cons: ["Must specify K", "Assumes spherical clusters", "Sensitive to outliers", "Poor on non-convex shapes"], code: `from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import silhouette_score
+import numpy as np
+
+X_scaled = StandardScaler().fit_transform(X)
+sil      = [silhouette_score(X_scaled, KMeans(k, random_state=42, n_init=10).fit_predict(X_scaled)) for k in range(2,11)]
+best_k   = range(2,11)[np.argmax(sil)]
+labels   = KMeans(n_clusters=best_k, random_state=42, n_init=10).fit_predict(X_scaled)`},
+            dbscan: {
+                name: "DBSCAN", reason: "Density-based clustering. Discovers arbitrary-shaped clusters and automatically labels outliers. No K specification needed.", pros: ["No K required", "Finds outliers automatically", "Arbitrary cluster shapes", "Robust to noise"], cons: ["Sensitive to eps and min_samples", "Struggles with varying density", "Slow O(n²)", "Fails in high dimensions"], code: `from sklearn.cluster import DBSCAN
+from sklearn.preprocessing import StandardScaler
+
+X_scaled = StandardScaler().fit_transform(X)
+model    = DBSCAN(eps=0.5, min_samples=5)
+labels   = model.fit_predict(X_scaled)
+print(f"Clusters: {len(set(labels))-(1 if -1 in labels else 0)}, Outliers: {list(labels).count(-1)}")`},
+            hierarchical: {
+                name: "Hierarchical Clustering", reason: "Builds a full dendrogram of cluster merges. Choose cluster count after fitting by cutting the tree — no K needed upfront.", pros: ["No K required upfront", "Full dendrogram for exploration", "Deterministic", "Multiple linkage options"], cons: ["O(n²) memory and time", "Slow above 10k rows", "Cannot update without refit", "Linkage choice matters"], code: `from sklearn.cluster import AgglomerativeClustering
+from scipy.cluster.hierarchy import dendrogram, linkage
+import matplotlib.pyplot as plt
+
+Z = linkage(X, method='ward')
+dendrogram(Z, truncate_mode='lastp', p=30)
+plt.show()
+
+model  = AgglomerativeClustering(n_clusters=4, linkage='ward')
+labels = model.fit_predict(X)`},
+            gaussian_mixture: {
+                name: "Gaussian Mixture Model", reason: "Probabilistic soft-assignment clustering. Each cluster is a Gaussian — returns membership probabilities rather than hard labels.", pros: ["Soft probability assignments", "Handles elliptical shapes", "BIC/AIC model selection", "More flexible than K-Means"], cons: ["Must specify components", "Slower than K-Means", "Local optima possible", "Assumes Gaussian"], code: `from sklearn.mixture import GaussianMixture
+import numpy as np
+
+bic    = [GaussianMixture(n, random_state=42).fit(X).bic(X) for n in range(2,10)]
+best_n = range(2,10)[np.argmin(bic)]
+model  = GaussianMixture(n_components=best_n, random_state=42)
+labels = model.fit_predict(X)`},
+            minibatch_kmeans: {
+                name: "Mini-Batch K-Means", reason: "Scalable K-Means using random mini-batches per iteration. Much faster than standard K-Means on large datasets with minimal accuracy loss.", pros: ["Much faster than standard K-Means", "Low memory", "Good accuracy tradeoff", "Supports streaming via partial_fit"], cons: ["Slightly less accurate", "Still needs K", "Non-deterministic", "Assumes spherical clusters"], code: `from sklearn.cluster import MiniBatchKMeans
+from sklearn.preprocessing import StandardScaler
+
+X_scaled = StandardScaler().fit_transform(X)
+model    = MiniBatchKMeans(n_clusters=5, batch_size=2048, n_init=10, random_state=42)
+labels   = model.fit_predict(X_scaled)`},
+            lda_topic: {
+                name: "LDA Topic Modeling", reason: "Discovers hidden topics in text — each document is a mixture of topics, each topic a distribution over words. Unsupervised and interpretable.", pros: ["Interpretable topics", "No labels needed", "Natural for text", "Soft assignments"], cons: ["Number of topics needed", "Slow on large corpora", "Topic quality varies", "Poor on short texts"], code: `from sklearn.decomposition import LatentDirichletAllocation
+from sklearn.feature_extraction.text import CountVectorizer
+
+vec      = CountVectorizer(max_features=5000, stop_words='english', min_df=2)
+X_counts = vec.fit_transform(documents)
+lda      = LatentDirichletAllocation(n_components=10, random_state=42)
+lda.fit(X_counts)`},
+            pca: {
+                name: "PCA", reason: "Linear dimensionality reduction via SVD. Fast, well-understood, and often sufficient. Always the correct first attempt before non-linear methods.", pros: ["Extremely fast", "Removes correlated noise", "Uncorrelated components", "Reduces downstream overfitting"], cons: ["Linear only", "Loses feature interpretability", "Sensitive to scaling", "May miss non-linear structure"], code: `from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
+
+X_scaled  = StandardScaler().fit_transform(X)
+pca       = PCA(n_components=0.95)
+X_reduced = pca.fit_transform(X_scaled)
+print(f"Components: {pca.n_components_}, Variance: {pca.explained_variance_ratio_.sum():.2%}")`},
+            umap: {
+                name: "UMAP", reason: "Non-linear manifold learning preserving local and global structure. Faster than t-SNE on large data with reusable embeddings for downstream ML.", pros: ["Preserves global structure", "Faster than t-SNE on large data", "Reusable embeddings", "Works on many data types"], cons: ["Non-deterministic", "Axes have no meaning", "Sensitive to hyperparameters", "Extra dependency"], code: `import umap
+from sklearn.preprocessing import StandardScaler
+
+X_scaled   = StandardScaler().fit_transform(X)
+reducer    = umap.UMAP(n_components=2, n_neighbors=15, min_dist=0.1, random_state=42)
+X_embedded = reducer.fit_transform(X_scaled)`},
+            tsne: {
+                name: "t-SNE", reason: "Optimized for 2D/3D visualization. Excellent at revealing cluster structure invisible to other methods. Use only for plotting — not downstream ML.", pros: ["Best for 2D/3D visualization", "Reveals fine cluster structure", "Non-linear manifold", "Well-established"], cons: ["Very slow O(n²)", "Cannot embed new points", "Perplexity must be tuned", "Axes have no meaning"], code: `from sklearn.manifold import TSNE
+from sklearn.preprocessing import StandardScaler
+
+X_scaled   = StandardScaler().fit_transform(X)
+tsne       = TSNE(n_components=2, perplexity=30, init='pca', random_state=42)
+X_embedded = tsne.fit_transform(X_scaled)`},
+            autoencoder: {
+                name: "Autoencoder", reason: "Neural network that learns a compressed representation by reconstructing its own input. Captures non-linear structure that PCA cannot model.", pros: ["Learns complex non-linear structure", "Scalable", "Flexible architecture", "Embeddings usable downstream"], cons: ["Needs large data", "Slow training", "Hard to tune", "Black box"], code: `import torch.nn as nn
+
+class Autoencoder(nn.Module):
+    def __init__(self, dim, latent=16):
+        super().__init__()
+        self.enc = nn.Sequential(nn.Linear(dim,128),nn.ReLU(),nn.Linear(128,64),nn.ReLU(),nn.Linear(64,latent))
+        self.dec = nn.Sequential(nn.Linear(latent,64),nn.ReLU(),nn.Linear(64,128),nn.ReLU(),nn.Linear(128,dim))
+    def forward(self, x):
+        return self.dec(self.enc(x)), self.enc(x)`},
+            lsa: {
+                name: "LSA (Latent Semantic Analysis)", reason: "SVD-based reduction on TF-IDF matrices. Captures semantic word relationships in text — lightweight alternative to BERT for dimensionality reduction.", pros: ["Captures text semantics", "Fast via TruncatedSVD", "Works on sparse matrices", "No labels needed"], cons: ["Linear only", "Loses word order", "Components needed", "Lower quality than BERT"], code: `from sklearn.decomposition import TruncatedSVD
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.pipeline import Pipeline
+
+lsa       = Pipeline([('tfidf', TfidfVectorizer(max_features=10000, stop_words='english')), ('svd', TruncatedSVD(n_components=100, random_state=42))])
+X_reduced = lsa.fit_transform(documents)`},
+            nmf: {
+                name: "NMF", reason: "Non-negative Matrix Factorization. Parts-based decomposition — components are additive and non-negative, making them more interpretable than PCA for text.", pros: ["Interpretable non-negative components", "Good for topic modeling", "Parts-based representation", "No negative values"], cons: ["Non-negative input only", "Components needed", "Slower than PCA", "Local optima possible"], code: `from sklearn.decomposition import NMF
+from sklearn.feature_extraction.text import TfidfVectorizer
+
+vec   = TfidfVectorizer(max_features=5000, stop_words='english')
+nmf   = NMF(n_components=15, random_state=42)
+X_red = nmf.fit_transform(vec.fit_transform(documents))`},
+            lda_dim: {
+                name: "LDA (Discriminant Analysis)", reason: "Supervised dimensionality reduction maximizing class separability. Uses class labels to find the most discriminative projections — unlike PCA.", pros: ["Uses class info optimally", "Excellent classification preprocessing", "Fast", "At most n_classes-1 components"], cons: ["Supervised — needs labels", "Assumes Gaussian", "Limited output dimensions", "Equal covariance assumption"], code: `from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.preprocessing import StandardScaler
+
+X_scaled  = StandardScaler().fit_transform(X)
+lda       = LinearDiscriminantAnalysis(n_components=2)
+X_reduced = lda.fit_transform(X_scaled, y)`},
+            isolation_forest: {
+                name: "Isolation Forest", reason: "Anomaly detector via random partitioning. Anomalies are isolated faster than normal points. Fast, scalable, no labeled anomalies required.", pros: ["No anomaly labels needed", "Linear time O(n)", "High-dimensional data handled", "Intuitive contamination parameter"], cons: ["Cannot explain why anomalous", "Contamination needs domain knowledge", "Less effective on local anomalies", "Black box"], code: `from sklearn.ensemble import IsolationForest
+from sklearn.preprocessing import StandardScaler
+
+X_scaled = StandardScaler().fit_transform(X)
+model    = IsolationForest(n_estimators=200, contamination=0.05, random_state=42, n_jobs=-1)
+preds    = model.fit_predict(X_scaled)
+print(f"Anomalies: {(preds==-1).sum()}")`},
+            lof: {
+                name: "Local Outlier Factor", reason: "Compares local density of each point against its neighbors. Detects contextual anomalies that global methods miss — no training phase needed.", pros: ["Detects local contextual anomalies", "No training needed", "Works on complex distributions", "Intuitive"], cons: ["O(n²) — slow on large data", "Cannot predict new points", "Sensitive to n_neighbors", "High memory"], code: `from sklearn.neighbors import LocalOutlierFactor
+from sklearn.preprocessing import StandardScaler
+
+X_scaled = StandardScaler().fit_transform(X)
+model    = LocalOutlierFactor(n_neighbors=20, contamination=0.05, n_jobs=-1)
+preds    = model.fit_predict(X_scaled)
+print(f"Anomalies: {(preds==-1).sum()}")`},
+            one_class_svm: {
+                name: "One-Class SVM", reason: "Learns the boundary of normal data distribution. Best when normal examples are abundant but no anomaly examples exist during training.", pros: ["Only needs normal class", "Learns complex boundaries", "Works in high dimensions", "Flexible kernels"], cons: ["Slow O(n²–n³)", "Needs feature scaling", "Kernel and nu selection tricky", "Memory intensive"], code: `from sklearn.svm import OneClassSVM
+from sklearn.preprocessing import StandardScaler
+
+scaler          = StandardScaler()
+X_normal_scaled = scaler.fit_transform(X_normal)
+model           = OneClassSVM(kernel='rbf', nu=0.05, gamma='scale')
+model.fit(X_normal_scaled)
+preds           = model.predict(scaler.transform(X_test))`},
+            autoencoder_anom: {
+                name: "Autoencoder Anomaly Detection", reason: "Train on normal data only. Anomalies produce high reconstruction error because the model never learned their patterns. Best for high-dimensional data.", pros: ["Learns complex normal patterns", "Scalable", "Unsupervised", "Works on any data type"], cons: ["Threshold tuning required", "Slow training", "Needs sufficient normal data", "Black box"], code: `import torch, numpy as np
+
+class AnomalyAE(nn.Module):
+    def __init__(self, dim):
+        super().__init__()
+        self.enc = nn.Sequential(nn.Linear(dim,32),nn.ReLU(),nn.Linear(32,8))
+        self.dec = nn.Sequential(nn.Linear(8,32),nn.ReLU(),nn.Linear(32,dim))
+    def forward(self, x): return self.dec(self.enc(x))
+
+with torch.no_grad():
+    err = ((X_t - model(X_t))**2).mean(dim=1).numpy()
+anomalies = err > np.percentile(train_errors, 95)`},
+            arima_anom: {
+                name: "ARIMA Anomaly Detection", reason: "Fit ARIMA on the series; flag residuals beyond a statistical threshold as anomalies. Simple, interpretable, and statistically grounded.", pros: ["Interpretable residuals", "Works on small data", "No ML labels needed", "Statistically grounded"], cons: ["Univariate only", "Stationarity required", "Manual threshold", "Misses multivariate anomalies"], code: `from statsmodels.tsa.arima.model import ARIMA
+import numpy as np
+
+result    = ARIMA(train_series, order=(1,1,1)).fit()
+residuals = test_series - result.forecast(steps=len(test_series))
+anomalies = np.abs(residuals) > 3 * np.std(result.resid)
+print(f"Anomalies: {anomalies.sum()}")`}
+        };
+
+        function recommend() {
+            const problem = document.getElementById('problem').value;
+            const datatype = document.getElementById('datatype').value;
+            const size = document.getElementById('size').value;
+            const container = document.getElementById('results');
+
+            if (!problem || !datatype || !size) {
+                container.innerHTML = `<div class="error-box">Please select all three options before proceeding.</div>`;
+                return;
+            }
+
+            const keys = DB[problem]?.[datatype]?.[size] || [];
+            if (!keys.length) {
+                container.innerHTML = `<div class="error-box">No recommendations for this combination. Try a different data type.</div>`;
+                return;
+            }
+
+            const labels = ['Best Pick', 'Alternative I', 'Alternative II'];
+            let html = `
+    <div class="results-head">
+      <h2>Recommendations for <em>${problem}</em></h2>
+      <p class="results-meta">${keys.length} algorithms ranked · ${datatype} data · ${size} dataset</p>
+    </div>
+    <div class="algo-list">
+  `;
+
+            keys.forEach((key, i) => {
+                const a = ALGOS[key];
+                if (!a) return;
+                html += `
+      <div class="algo-card ${i === 0 ? 'best' : ''}" style="animation-delay:${i * 0.12}s">
+        <div class="card-top">
+          <div>
+            <div class="badge-row">
+              <span class="badge ${i === 0 ? 'badge-best' : 'badge-alt'}">${labels[i] || 'Alternative'}</span>
+              <span class="badge badge-rank">#${i + 1}</span>
+            </div>
+            <div class="algo-name">${a.name}</div>
+            <div class="algo-reason">${a.reason}</div>
+          </div>
+          <div class="rank-num">${String(i + 1).padStart(2, '0')}</div>
+        </div>
+        <div class="card-body">
+          <div class="pc-col pros">
+            <h4>Advantages</h4>
+            <ul class="pc-list">${a.pros.map(p => `<li>${p}</li>`).join('')}</ul>
+          </div>
+          <div class="pc-col cons">
+            <h4>Limitations</h4>
+            <ul class="pc-list">${a.cons.map(c => `<li>${c}</li>`).join('')}</ul>
+          </div>
+        </div>
+        <div class="code-section">
+          <button class="code-toggle" onclick="toggleCode('cw${i}',this)">
+            <span>View Python code snippet</span>
+            <span class="chevron">▾</span>
+          </button>
+          <div class="code-wrap" id="cw${i}">
+            <div class="code-header">
+              <span class="code-lang">Python · sklearn</span>
+              <button class="copy-btn" onclick="copyCode('pre${i}',this)">Copy</button>
+            </div>
+            <pre id="pre${i}">${esc(a.code)}</pre>
+          </div>
+        </div>
+      </div>
+    `;
+            });
+
+            html += `</div>`;
+            container.innerHTML = html;
+            container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+
+        function toggleCode(id, btn) {
+            const el = document.getElementById(id);
+            const open = el.classList.toggle('open');
+            btn.classList.toggle('open', open);
+            btn.querySelector('span:first-child').textContent = open ? 'Hide code snippet' : 'View Python code snippet';
+        }
+
+        function copyCode(id, btn) {
+            navigator.clipboard.writeText(document.getElementById(id).textContent).then(() => {
+                btn.textContent = 'Copied!';
+                setTimeout(() => btn.textContent = 'Copy', 2000);
+            });
+        }
+
+        function esc(s) { return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;'); }
+    </script>
+</body>
+
+</html>
